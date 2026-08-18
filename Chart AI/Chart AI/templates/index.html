@@ -1,0 +1,1960 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Chart AI</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+</head>
+
+
+<body>
+
+<div class="app">
+
+
+    <!-- ======================================
+         ヘッダー
+    ======================================= -->
+
+    <header class="header">
+
+        <div>
+
+            <div class="brand">
+                Chart AI
+            </div>
+
+            <div class="subtitle">
+                Market analysis
+            </div>
+
+        </div>
+
+
+        <button
+            id="darkModeButton"
+            class="dark-button"
+        >
+            ◐
+        </button>
+
+    </header>
+
+
+    <!-- ======================================
+         検索
+    ======================================= -->
+
+    <section class="search-section">
+
+        <div class="search-box">
+
+            <input
+                id="searchInput"
+                type="text"
+                placeholder="銘柄名・ティッカーを検索"
+                autocomplete="off"
+            >
+
+            <button id="searchButton">
+                検索
+            </button>
+
+        </div>
+
+
+        <div
+            id="searchStatus"
+            class="search-status"
+        ></div>
+
+
+        <div
+            id="searchResults"
+            class="search-results"
+        ></div>
+
+    </section>
+
+
+    <!-- ======================================
+         ウォッチリスト
+    ======================================= -->
+
+    <section class="watchlist-section">
+
+        <div class="section-label">
+            ウォッチリスト
+        </div>
+
+        <div
+            id="watchlist"
+            class="watchlist"
+        ></div>
+
+    </section>
+
+
+    <!-- ======================================
+         ワークスペース
+    ======================================= -->
+
+    <main
+        id="workspace"
+        class="workspace hidden"
+    >
+
+
+        <!-- 銘柄ヘッダー -->
+
+        <section class="stock-header">
+
+            <div>
+
+                <div
+                    id="stockName"
+                    class="stock-name"
+                >
+                    -
+                </div>
+
+                <div
+                    id="stockSymbol"
+                    class="stock-symbol"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <button
+                id="watchButton"
+                class="watch-button"
+            >
+                ☆ ウォッチリストに追加
+            </button>
+
+        </section>
+
+
+        <!-- ==================================
+             期間
+        =================================== -->
+
+        <div class="period-buttons">
+
+            <button
+                class="period-button"
+                data-period="1mo"
+            >
+                1ヶ月
+            </button>
+
+            <button
+                class="period-button active"
+                data-period="3mo"
+            >
+                3ヶ月
+            </button>
+
+            <button
+                class="period-button"
+                data-period="6mo"
+            >
+                6ヶ月
+            </button>
+
+            <button
+                class="period-button"
+                data-period="1y"
+            >
+                1年
+            </button>
+
+            <button
+                class="period-button"
+                data-period="5y"
+            >
+                5年
+            </button>
+
+        </div>
+
+
+        <!-- ==================================
+             サマリー
+        =================================== -->
+
+        <section class="summary-grid">
+
+            <div class="summary-item">
+
+                <span>現在価格</span>
+
+                <strong id="price">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="summary-item">
+
+                <span>予想</span>
+
+                <strong id="direction">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="summary-item">
+
+                <span>スコア</span>
+
+                <strong id="score">
+                    -
+                </strong>
+
+            </div>
+
+
+            <div class="summary-item">
+
+                <span>RSI</span>
+
+                <strong id="rsi">
+                    -
+                </strong>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==================================
+             メインチャート
+        =================================== -->
+
+        <section class="chart-card">
+
+            <div class="chart-title-row">
+
+                <div class="chart-title">
+                    Price Chart
+                </div>
+
+                <div class="chart-help">
+                    Zoom / Pan / Crosshair対応
+                </div>
+
+            </div>
+
+
+            <div
+                id="priceChart"
+                class="price-chart"
+            ></div>
+
+        </section>
+
+
+        <!-- ==================================
+             RSI
+        =================================== -->
+
+        <section class="indicator-card">
+
+            <div class="indicator-title">
+                RSI
+            </div>
+
+            <div
+                id="rsiChart"
+                class="indicator-chart"
+            ></div>
+
+        </section>
+
+
+        <!-- ==================================
+             MACD
+        =================================== -->
+
+        <section class="indicator-card">
+
+            <div class="indicator-title">
+                MACD
+            </div>
+
+            <div
+                id="macdChart"
+                class="indicator-chart"
+            ></div>
+
+        </section>
+
+
+        <!-- ==================================
+             詳細分析
+        =================================== -->
+
+        <section class="analysis-card">
+
+            <div class="analysis-title">
+                Technical Analysis
+            </div>
+
+
+            <div class="metrics">
+
+                <div>
+                    <span>MA20</span>
+                    <strong id="ma20">-</strong>
+                </div>
+
+                <div>
+                    <span>MA50</span>
+                    <strong id="ma50">-</strong>
+                </div>
+
+                <div>
+                    <span>MA200</span>
+                    <strong id="ma200">-</strong>
+                </div>
+
+                <div>
+                    <span>Support</span>
+                    <strong id="support">-</strong>
+                </div>
+
+                <div>
+                    <span>Resistance</span>
+                    <strong id="resistance">-</strong>
+                </div>
+
+                <div>
+                    <span>MACD</span>
+                    <strong id="macd">-</strong>
+                </div>
+
+            </div>
+
+
+            <div class="prediction-box">
+
+                <div class="prediction-label">
+                    テクニカル予想
+                </div>
+
+                <div
+                    id="prediction"
+                    class="prediction"
+                >
+                    -
+                </div>
+
+
+                <div
+                    id="scoreBar"
+                    class="score-bar"
+                >
+
+                    <div
+                        id="scoreFill"
+                        class="score-fill"
+                    ></div>
+
+                </div>
+
+                <div
+                    id="scoreText"
+                    class="score-text"
+                >
+                    -
+                </div>
+
+            </div>
+
+
+            <div class="reason-columns">
+
+                <div>
+
+                    <h3>
+                        上昇材料
+                    </h3>
+
+                    <div
+                        id="upReasons"
+                    ></div>
+
+                </div>
+
+
+                <div>
+
+                    <h3>
+                        下降材料
+                    </h3>
+
+                    <div
+                        id="downReasons"
+                    ></div>
+
+                </div>
+
+            </div>
+
+
+            <div class="notice">
+
+                この予想は過去の市場データと
+                テクニカル指標から算出した方向性の推測です。
+                将来の価格を保証するものではありません。
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <footer>
+        Chart AI
+    </footer>
+
+</div>
+
+
+<script>
+
+
+// =================================================
+// 状態
+// =================================================
+
+const state = {
+
+    activeSymbol: null,
+
+    activeName: null,
+
+    activePeriod: "3mo",
+
+    watchlist:
+        JSON.parse(
+            localStorage.getItem(
+                "chartAIWatchlist"
+            ) || "[]"
+        )
+
+};
+
+
+// =================================================
+// DOM
+// =================================================
+
+const searchInput =
+    document.getElementById(
+        "searchInput"
+    );
+
+
+const searchButton =
+    document.getElementById(
+        "searchButton"
+    );
+
+
+const searchStatus =
+    document.getElementById(
+        "searchStatus"
+    );
+
+
+const searchResults =
+    document.getElementById(
+        "searchResults"
+    );
+
+
+const workspace =
+    document.getElementById(
+        "workspace"
+    );
+
+
+const watchButton =
+    document.getElementById(
+        "watchButton"
+    );
+
+
+// =================================================
+// HTML安全化
+// =================================================
+
+function escapeHtml(value) {
+
+    return String(value)
+        .replaceAll(
+            "&",
+            "&amp;"
+        )
+        .replaceAll(
+            "<",
+            "&lt;"
+        )
+        .replaceAll(
+            ">",
+            "&gt;"
+        )
+        .replaceAll(
+            '"',
+            "&quot;"
+        )
+        .replaceAll(
+            "'",
+            "&#039;"
+        );
+
+}
+
+
+// =================================================
+// 数値
+// =================================================
+
+function formatNumber(value) {
+
+    if (
+        value === null
+        ||
+        value === undefined
+        ||
+        Number.isNaN(
+            Number(value)
+        )
+    ) {
+        return "-";
+    }
+
+    return Number(value)
+        .toLocaleString(
+            "ja-JP",
+            {
+                maximumFractionDigits: 2
+            }
+        );
+
+}
+
+
+// =================================================
+// ウォッチリスト保存
+// =================================================
+
+function saveWatchlist() {
+
+    localStorage.setItem(
+        "chartAIWatchlist",
+        JSON.stringify(
+            state.watchlist
+        )
+    );
+
+}
+
+
+// =================================================
+// ウォッチリスト表示
+// =================================================
+
+function renderWatchlist() {
+
+    const container =
+        document.getElementById(
+            "watchlist"
+        );
+
+
+    container.innerHTML = "";
+
+
+    if (
+        state.watchlist.length === 0
+    ) {
+
+        container.innerHTML =
+            "<div class='watch-empty'>まだ銘柄がありません。</div>";
+
+        return;
+
+    }
+
+
+    state.watchlist.forEach(
+        stock => {
+
+            const item =
+                document.createElement(
+                    "button"
+                );
+
+
+            item.className =
+                "watch-item";
+
+
+            if (
+                stock.symbol
+                ===
+                state.activeSymbol
+            ) {
+
+                item.classList.add(
+                    "active"
+                );
+
+            }
+
+
+            item.innerHTML = `
+
+                <span>
+                    ${escapeHtml(
+                        stock.name
+                    )}
+                </span>
+
+                <small>
+                    ${escapeHtml(
+                        stock.symbol
+                    )}
+                </small>
+
+            `;
+
+
+            item.addEventListener(
+                "click",
+                () => {
+
+                    selectStock(
+                        stock.symbol,
+                        stock.name
+                    );
+
+                }
+            );
+
+
+            container.appendChild(
+                item
+            );
+
+        }
+    );
+
+}
+
+
+// =================================================
+// ウォッチリストに追加 / 削除
+// =================================================
+
+function updateWatchButton() {
+
+    const exists =
+        state.watchlist.some(
+            stock =>
+                stock.symbol
+                ===
+                state.activeSymbol
+        );
+
+
+    if (exists) {
+
+        watchButton.textContent =
+            "★ ウォッチリストから削除";
+
+        watchButton.classList.add(
+            "watching"
+        );
+
+    } else {
+
+        watchButton.textContent =
+            "☆ ウォッチリストに追加";
+
+        watchButton.classList.remove(
+            "watching"
+        );
+
+    }
+
+}
+
+
+function toggleWatchlist() {
+
+    if (
+        !state.activeSymbol
+    ) {
+        return;
+    }
+
+
+    const index =
+        state.watchlist.findIndex(
+            stock =>
+                stock.symbol
+                ===
+                state.activeSymbol
+        );
+
+
+    if (index >= 0) {
+
+        state.watchlist.splice(
+            index,
+            1
+        );
+
+    } else {
+
+        state.watchlist.push({
+
+            symbol:
+                state.activeSymbol,
+
+            name:
+                state.activeName
+
+        });
+
+    }
+
+
+    saveWatchlist();
+
+    renderWatchlist();
+
+    updateWatchButton();
+
+}
+
+
+// =================================================
+// 検索
+// =================================================
+
+async function searchStocks() {
+
+    const query =
+        searchInput.value.trim();
+
+
+    if (!query) {
+
+        searchResults.innerHTML = "";
+
+        searchStatus.textContent = "";
+
+        return;
+
+    }
+
+
+    searchStatus.textContent =
+        "検索中...";
+
+
+    searchResults.innerHTML =
+        "";
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/search?q="
+                +
+                encodeURIComponent(
+                    query
+                )
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "検索に失敗しました。"
+            );
+
+        }
+
+
+        const results =
+            await response.json();
+
+
+        if (
+            !Array.isArray(
+                results
+            )
+            ||
+            results.length === 0
+        ) {
+
+            searchStatus.textContent =
+                "銘柄が見つかりませんでした。";
+
+            return;
+
+        }
+
+
+        searchStatus.textContent =
+            `${results.length}件の候補`;
+
+
+        results.forEach(
+            stock => {
+
+                const row =
+                    document.createElement(
+                        "div"
+                    );
+
+
+                row.className =
+                    "search-result";
+
+
+                row.innerHTML = `
+
+                    <div>
+
+                        <div class="result-name">
+                            ${escapeHtml(
+                                stock.name
+                            )}
+                        </div>
+
+                        <div class="result-meta">
+
+                            ${escapeHtml(
+                                stock.symbol
+                            )}
+
+                            ${
+                                stock.exchange
+                                ? " · "
+                                + escapeHtml(
+                                    stock.exchange
+                                )
+                                : ""
+                            }
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="result-button"
+                    >
+                        表示
+                    </button>
+
+                `;
+
+
+                row
+                    .querySelector(
+                        ".result-button"
+                    )
+                    .addEventListener(
+                        "click",
+                        () => {
+
+                            selectStock(
+                                stock.symbol,
+                                stock.name
+                            );
+
+                        }
+                    );
+
+
+                searchResults.appendChild(
+                    row
+                );
+
+            }
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            error
+        );
+
+        searchStatus.textContent =
+            "検索でエラーが発生しました。";
+
+    }
+
+}
+
+
+// =================================================
+// 銘柄選択
+// =================================================
+
+async function selectStock(
+    symbol,
+    name
+) {
+
+    state.activeSymbol =
+        symbol;
+
+    state.activeName =
+        name;
+
+
+    workspace.classList.remove(
+        "hidden"
+    );
+
+
+    document
+        .getElementById(
+            "stockName"
+        )
+        .textContent =
+            name;
+
+
+    document
+        .getElementById(
+            "stockSymbol"
+        )
+        .textContent =
+            symbol;
+
+
+    renderWatchlist();
+
+    updateWatchButton();
+
+
+    searchResults.innerHTML = "";
+
+    searchStatus.textContent = "";
+
+
+    await loadAnalysis();
+
+}
+
+
+// =================================================
+// データ読み込み
+// =================================================
+
+async function loadAnalysis() {
+
+    if (
+        !state.activeSymbol
+    ) {
+        return;
+    }
+
+
+    document
+        .getElementById(
+            "priceChart"
+        )
+        .innerHTML =
+            "<div class='chart-loading'>チャートを読み込んでいます...</div>";
+
+
+    try {
+
+        const response =
+            await fetch(
+                `/api/analyze?symbol=${encodeURIComponent(
+                    state.activeSymbol
+                )}&period=${encodeURIComponent(
+                    state.activePeriod
+                )}`
+            );
+
+
+        const data =
+            await response.json();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error
+                ||
+                "分析に失敗しました。"
+            );
+
+        }
+
+
+        updateAnalysis(
+            data.analysis
+        );
+
+
+        drawPriceChart(
+            data.chart
+        );
+
+
+        drawRSIChart(
+            data.chart
+        );
+
+
+        drawMACDChart(
+            data.chart
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            error
+        );
+
+
+        document
+            .getElementById(
+                "priceChart"
+            )
+            .innerHTML = `
+
+                <div class="chart-error">
+
+                    ${escapeHtml(
+                        error.message
+                    )}
+
+                </div>
+
+            `;
+
+    }
+
+}
+
+
+// =================================================
+// 分析結果
+// =================================================
+
+function updateAnalysis(
+    analysis
+) {
+
+    document
+        .getElementById(
+            "price"
+        )
+        .textContent =
+            formatNumber(
+                analysis.price
+            );
+
+
+    const direction =
+        document.getElementById(
+            "direction"
+        );
+
+
+    direction.textContent =
+        analysis.direction;
+
+
+    direction.className =
+        "summary-direction "
+        +
+        analysis.direction_class;
+
+
+    document
+        .getElementById(
+            "score"
+        )
+        .textContent =
+            `${analysis.score}/100`;
+
+
+    document
+        .getElementById(
+            "rsi"
+        )
+        .textContent =
+            analysis.rsi !== null
+                ? Number(
+                    analysis.rsi
+                ).toFixed(1)
+                : "-";
+
+
+    document
+        .getElementById(
+            "ma20"
+        )
+        .textContent =
+            formatNumber(
+                analysis.ma20
+            );
+
+
+    document
+        .getElementById(
+            "ma50"
+        )
+        .textContent =
+            formatNumber(
+                analysis.ma50
+            );
+
+
+    document
+        .getElementById(
+            "ma200"
+        )
+        .textContent =
+            formatNumber(
+                analysis.ma200
+            );
+
+
+    document
+        .getElementById(
+            "support"
+        )
+        .textContent =
+            formatNumber(
+                analysis.support
+            );
+
+
+    document
+        .getElementById(
+            "resistance"
+        )
+        .textContent =
+            formatNumber(
+                analysis.resistance
+            );
+
+
+    document
+        .getElementById(
+            "macd"
+        )
+        .textContent =
+            formatNumber(
+                analysis.macd
+            );
+
+
+    document
+        .getElementById(
+            "prediction"
+        )
+        .textContent =
+            analysis.direction;
+
+
+    const prediction =
+        document.getElementById(
+            "prediction"
+        );
+
+
+    prediction.className =
+        "prediction "
+        +
+        analysis.direction_class;
+
+
+    const scoreFill =
+        document.getElementById(
+            "scoreFill"
+        );
+
+
+    scoreFill.style.width =
+        analysis.score + "%";
+
+
+    scoreFill.className =
+        "score-fill "
+        +
+        analysis.direction_class;
+
+
+    document
+        .getElementById(
+            "scoreText"
+        )
+        .textContent =
+            `テクニカルスコア ${analysis.score}/100`;
+
+
+    const upReasons =
+        document.getElementById(
+            "upReasons"
+        );
+
+
+    upReasons.innerHTML = "";
+
+
+    analysis.up_reasons.forEach(
+        reason => {
+
+            const item =
+                document.createElement(
+                    "div"
+                );
+
+            item.className =
+                "reason up";
+
+            item.textContent =
+                "＋ " + reason;
+
+            upReasons.appendChild(
+                item
+            );
+
+        }
+    );
+
+
+    const downReasons =
+        document.getElementById(
+            "downReasons"
+        );
+
+
+    downReasons.innerHTML = "";
+
+
+    analysis.down_reasons.forEach(
+        reason => {
+
+            const item =
+                document.createElement(
+                    "div"
+                );
+
+            item.className =
+                "reason down";
+
+            item.textContent =
+                "− " + reason;
+
+            downReasons.appendChild(
+                item
+            );
+
+        }
+    );
+
+}
+
+
+// =================================================
+// 共通チャートレイアウト
+// =================================================
+
+function baseLayout() {
+
+    return {
+
+        paper_bgcolor:
+            "#ffffff",
+
+        plot_bgcolor:
+            "#ffffff",
+
+        font: {
+
+            family:
+                "-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+
+            color:
+                "#1d1d1f"
+
+        },
+
+        margin: {
+
+            l: 55,
+
+            r: 25,
+
+            t: 20,
+
+            b: 45
+
+        },
+
+        hovermode:
+            "x unified",
+
+        xaxis: {
+
+            showgrid:
+                false,
+
+            rangeslider: {
+
+                visible:
+                    false
+
+            }
+
+        },
+
+        yaxis: {
+
+            showgrid:
+                true,
+
+            gridcolor:
+                "#eeeeee",
+
+            zeroline:
+                false
+
+        }
+
+    };
+
+}
+
+
+// =================================================
+// 価格チャート
+// =================================================
+
+function drawPriceChart(
+    rows
+) {
+
+    const dates =
+        rows.map(
+            row => row.date
+        );
+
+
+    const traces = [
+
+        {
+
+            x: dates,
+
+            open:
+                rows.map(
+                    row => row.open
+                ),
+
+            high:
+                rows.map(
+                    row => row.high
+                ),
+
+            low:
+                rows.map(
+                    row => row.low
+                ),
+
+            close:
+                rows.map(
+                    row => row.close
+                ),
+
+            type:
+                "candlestick",
+
+            name:
+                "Price"
+
+        },
+
+
+        {
+
+            x: dates,
+
+            y:
+                rows.map(
+                    row => row.ma20
+                ),
+
+            type:
+                "scatter",
+
+            mode:
+                "lines",
+
+            name:
+                "MA20",
+
+            line: {
+                width:
+                    1
+            }
+
+        },
+
+
+        {
+
+            x: dates,
+
+            y:
+                rows.map(
+                    row => row.ma50
+                ),
+
+            type:
+                "scatter",
+
+            mode:
+                "lines",
+
+            name:
+                "MA50",
+
+            line: {
+                width:
+                    1
+            }
+
+        },
+
+
+        {
+
+            x: dates,
+
+            y:
+                rows.map(
+                    row => row.ma200
+                ),
+
+            type:
+                "scatter",
+
+            mode:
+                "lines",
+
+            name:
+                "MA200",
+
+            line: {
+                width:
+                    1
+            }
+
+        }
+
+    ];
+
+
+    const layout =
+        baseLayout();
+
+
+    layout.height =
+        560;
+
+
+    Plotly.newPlot(
+
+        "priceChart",
+
+        traces,
+
+        layout,
+
+        {
+
+            responsive:
+                true,
+
+            displaylogo:
+                false,
+
+            scrollZoom:
+                true
+
+        }
+
+    );
+
+}
+
+
+// =================================================
+// RSIチャート
+// =================================================
+
+function drawRSIChart(
+    rows
+) {
+
+    const dates =
+        rows.map(
+            row => row.date
+        );
+
+
+    const trace = {
+
+        x:
+            dates,
+
+        y:
+            rows.map(
+                row => row.rsi
+            ),
+
+        type:
+            "scatter",
+
+        mode:
+            "lines",
+
+        name:
+            "RSI",
+
+        line: {
+            width:
+                1.5
+        }
+
+    };
+
+
+    const layout =
+        baseLayout();
+
+
+    layout.height =
+        220;
+
+
+    layout.margin.t =
+        10;
+
+
+    layout.yaxis = {
+
+        range:
+            [0, 100],
+
+        showgrid:
+            true,
+
+        gridcolor:
+            "#eeeeee"
+
+    };
+
+
+    layout.shapes = [
+
+        {
+
+            type:
+                "line",
+
+            xref:
+                "paper",
+
+            x0:
+                0,
+
+            x1:
+                1,
+
+            y0:
+                70,
+
+            y1:
+                70,
+
+            line: {
+
+                color:
+                    "#cccccc",
+
+                dash:
+                    "dash"
+
+            }
+
+        },
+
+
+        {
+
+            type:
+                "line",
+
+            xref:
+                "paper",
+
+            x0:
+                0,
+
+            x1:
+                1,
+
+            y0:
+                30,
+
+            y1:
+                30,
+
+            line: {
+
+                color:
+                    "#cccccc",
+
+                dash:
+                    "dash"
+
+            }
+
+        }
+
+    ];
+
+
+    Plotly.newPlot(
+
+        "rsiChart",
+
+        [trace],
+
+        layout,
+
+        {
+
+            responsive:
+                true,
+
+            displaylogo:
+                false
+
+        }
+
+    );
+
+}
+
+
+// =================================================
+// MACDチャート
+// =================================================
+
+function drawMACDChart(
+    rows
+) {
+
+    const dates =
+        rows.map(
+            row => row.date
+        );
+
+
+    const histogram = {
+
+        x:
+            dates,
+
+        y:
+            rows.map(
+                row =>
+                    row.histogram
+            ),
+
+        type:
+            "bar",
+
+        name:
+            "Histogram"
+
+    };
+
+
+    const macd = {
+
+        x:
+            dates,
+
+        y:
+            rows.map(
+                row => row.macd
+            ),
+
+        type:
+            "scatter",
+
+        mode:
+            "lines",
+
+        name:
+            "MACD",
+
+        line: {
+            width:
+                1.5
+        }
+
+    };
+
+
+    const signal = {
+
+        x:
+            dates,
+
+        y:
+            rows.map(
+                row => row.signal
+            ),
+
+        type:
+            "scatter",
+
+        mode:
+            "lines",
+
+        name:
+            "Signal",
+
+        line: {
+            width:
+                1
+        }
+
+    };
+
+
+    const layout =
+        baseLayout();
+
+
+    layout.height =
+        220;
+
+
+    layout.margin.t =
+        10;
+
+
+    Plotly.newPlot(
+
+        "macdChart",
+
+        [
+            histogram,
+            macd,
+            signal
+        ],
+
+        layout,
+
+        {
+
+            responsive:
+                true,
+
+            displaylogo:
+                false
+
+        }
+
+    );
+
+}
+
+
+// =================================================
+// 期間変更
+// =================================================
+
+document
+    .querySelectorAll(
+        ".period-button"
+    )
+    .forEach(
+        button => {
+
+            button.addEventListener(
+                "click",
+                async () => {
+
+                    document
+                        .querySelectorAll(
+                            ".period-button"
+                        )
+                        .forEach(
+                            item =>
+                                item.classList.remove(
+                                    "active"
+                                )
+                        );
+
+
+                    button.classList.add(
+                        "active"
+                    );
+
+
+                    state.activePeriod =
+                        button.dataset.period;
+
+
+                    await loadAnalysis();
+
+                }
+            );
+
+        }
+    );
+
+
+// =================================================
+// Watch button
+// =================================================
+
+watchButton.addEventListener(
+    "click",
+    toggleWatchlist
+);
+
+
+// =================================================
+// 検索
+// =================================================
+
+searchButton.addEventListener(
+    "click",
+    searchStocks
+);
+
+
+searchInput.addEventListener(
+    "keydown",
+    event => {
+
+        if (
+            event.key === "Enter"
+        ) {
+
+            event.preventDefault();
+
+            searchStocks();
+
+        }
+
+    }
+);
+
+
+// 入力中の自動検索
+let searchTimer = null;
+
+
+searchInput.addEventListener(
+    "input",
+    () => {
+
+        clearTimeout(
+            searchTimer
+        );
+
+
+        searchTimer =
+            setTimeout(
+                searchStocks,
+                400
+            );
+
+    }
+);
+
+
+// =================================================
+// ダークモード
+// =================================================
+
+document
+    .getElementById(
+        "darkModeButton"
+    )
+    .addEventListener(
+        "click",
+        () => {
+
+            document.body.classList.toggle(
+                "dark"
+            );
+
+        }
+    );
+
+
+// =================================================
+// 初期表示
+// =================================================
+
+renderWatchlist();
+
+</script>
+
+</body>
+
+</html>
