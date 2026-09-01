@@ -1,9 +1,0 @@
-Flask
-yfinance
-pandas
-numpy
-scipy
-PyWavelets
-scikit-learn
-xgboost
-gunicorn
