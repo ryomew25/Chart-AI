@@ -1,560 +1,207 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chart AI</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chart AI — Market Intelligence</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
 </head>
-
 <body>
-<div class="app">
+  <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
+  <header class="topbar">
+    <a class="brand" href="#top" aria-label="Chart AI home">
+      <span class="brand-mark">✦</span><span><b>Chart AI</b><small>MARKET INTELLIGENCE</small></span>
+    </a>
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-view="analysis">分析</button>
+      <button class="nav-tab" data-view="discover">発掘</button>
+      <button class="nav-tab" data-view="watchlist">ウォッチリスト</button>
+    </nav>
+    <div class="market-status"><i></i> DATA ONLINE</div>
+  </header>
 
-    <header class="topbar">
-        <div>
-            <h1>Chart AI</h1>
-            <p>Quantitative stock research</p>
-        </div>
-        <button id="watchButton" class="watch-main">☆ ウォッチリスト</button>
-    </header>
-
-    <section class="search-card">
+  <main id="top" class="shell">
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="kicker">QUANTITATIVE MARKET WORKSPACE</span>
+        <h1>市場を、<em>データで読む。</em></h1>
+        <p>株価、テクニカル、ファンダメンタル、スクリーニングを一つのワークスペースへ。投資判断そのものではなく、情報整理と比較を支援します。</p>
+      </div>
+      <div class="search-card">
         <div class="search-row">
-            <input id="searchInput" placeholder="銘柄名・ティッカーを検索">
-            <button id="searchButton">検索</button>
+          <div class="search-wrap">
+            <span class="search-icon">⌕</span>
+            <input id="ticker" autocomplete="off" placeholder="銘柄名・コード・ティッカーを検索…">
+            <div id="suggestions" class="suggestions"></div>
+          </div>
+          <select id="period" aria-label="期間">
+            <option value="1d">1日</option><option value="1mo">1ヶ月</option><option value="3mo">3ヶ月</option>
+            <option value="6mo" selected>6ヶ月</option><option value="1y">1年</option><option value="2y">2年</option><option value="5y">5年</option><option value="max">全期間</option>
+          </select>
+          <button id="analyzeBtn" class="primary">分析する <span>↗</span></button>
         </div>
-        <div id="searchResults"></div>
+        <div class="quick-tags"><span>JPX</span><span>NASDAQ</span><span>NYSE</span><span>4桁コード対応</span><span>1日=5分足</span></div>
+      </div>
     </section>
 
-    <section id="watchPanel" class="card hidden">
-        <div class="section-title-row">
-            <h2>☆ ウォッチリスト</h2>
-            <button id="closeWatch" class="ghost">閉じる</button>
+    <section id="analysisView" class="view active">
+      <div id="emptyState" class="empty-state">
+        <div class="empty-orbit">✦</div>
+        <h2>銘柄を検索して分析を開始</h2>
+        <p>例：トヨタ / 7203 / AAPL / MSFT</p>
+      </div>
+      <div id="dashboard" class="hidden">
+        <div class="asset-head">
+          <div><span class="eyebrow">ASSET OVERVIEW</span><h2 id="companyName">—</h2><div id="companyMeta" class="muted">—</div></div>
+          <button id="watchBtn" class="watch-btn">☆ ウォッチ</button>
         </div>
-        <div id="watchList" class="watch-list"></div>
+        <div class="metric-grid">
+          <article class="metric-card price-card"><span>現在値</span><strong id="price">—</strong><small id="change">—</small></article>
+          <article class="metric-card"><span>テクニカル</span><strong id="direction">—</strong><small>ルールベースシグナル</small></article>
+          <article class="metric-card"><span>上昇寄りスコア</span><strong id="upProb">—</strong><small id="downProb">下降寄り —</small></article>
+          <article class="metric-card"><span>ファンダメンタル</span><strong id="fundScore">—</strong><small>データ取得時点</small></article>
+        </div>
+
+        <div class="panel chart-panel main-chart-panel">
+          <div class="panel-head"><div><span class="eyebrow">PRICE ACTION</span><h3>株価・移動平均</h3></div><span id="chartMeta" class="pill">—</span></div>
+          <div class="chart-box large"><canvas id="priceChart"></canvas></div>
+        </div>
+        <div class="two-col">
+          <div class="panel"><div class="panel-head"><h3>出来高 / ボラティリティ</h3></div><div class="chart-box"><canvas id="volumeChart"></canvas></div></div>
+          <div class="panel"><div class="panel-head"><h3>ボリンジャーバンド</h3></div><div class="chart-box"><canvas id="bbChart"></canvas></div></div>
+        </div>
+
+        <div class="section-title"><span class="eyebrow">MOMENTUM & RISK</span><h3>テクニカル・ワークスペース</h3></div>
+        <div class="chart-grid">
+          <div class="panel"><div class="panel-head"><h3>RSI</h3></div><div class="chart-box"><canvas id="rsiChart"></canvas></div></div>
+          <div class="panel"><div class="panel-head"><h3>MACD</h3></div><div class="chart-box"><canvas id="macdChart"></canvas></div></div>
+          <div class="panel"><div class="panel-head"><h3>Stochastic</h3></div><div class="chart-box"><canvas id="stochChart"></canvas></div></div>
+          <div class="panel"><div class="panel-head"><h3>ROC</h3></div><div class="chart-box"><canvas id="rocChart"></canvas></div></div>
+          <div class="panel"><div class="panel-head"><h3>ATR</h3></div><div class="chart-box"><canvas id="atrChart"></canvas></div></div>
+          <div class="panel"><div class="panel-head"><h3>標準偏差</h3></div><div class="chart-box"><canvas id="stdChart"></canvas></div></div>
+        </div>
+
+        <div class="section-title"><span class="eyebrow">SIGNAL BREAKDOWN</span><h3>シグナルの内訳</h3></div>
+        <div class="signal-grid"><div class="signal-panel up"><h4>上昇材料</h4><ul id="upReasons"></ul></div><div class="signal-panel down"><h4>下降材料</h4><ul id="downReasons"></ul></div></div>
+
+        <div class="section-title"><span class="eyebrow">FUNDAMENTAL RESEARCH</span><h3>ファンダメンタル分析</h3></div>
+        <div class="fund-grid">
+          <div class="fund-card"><div class="fund-head"><b>成長性</b><strong id="growthScore">—</strong></div><div class="rows"><div><span>売上成長率</span><b id="revenueGrowth">—</b></div><div><span>利益成長率</span><b id="earningsGrowth">—</b></div><div><span>四半期利益成長</span><b id="quarterGrowth">—</b></div></div></div>
+          <div class="fund-card"><div class="fund-head"><b>収益性</b><strong id="profitScore">—</strong></div><div class="rows"><div><span>EPS</span><b id="eps">—</b></div><div><span>ROE</span><b id="roe">—</b></div><div><span>ROA</span><b id="roa">—</b></div><div><span>営業利益率</span><b id="opMargin">—</b></div></div></div>
+          <div class="fund-card"><div class="fund-head"><b>バリュエーション</b><strong id="valuationScore">—</strong></div><div class="rows"><div><span>PER</span><b id="per">—</b></div><div><span>Forward PER</span><b id="forwardPer">—</b></div><div><span>PBR</span><b id="pbr">—</b></div><div><span>PSR</span><b id="psr">—</b></div></div></div>
+          <div class="fund-card"><div class="fund-head"><b>財務健全性</b><strong id="healthScore">—</strong></div><div class="rows"><div><span>現金</span><b id="cash">—</b></div><div><span>負債</span><b id="debt">—</b></div><div><span>D/E</span><b id="debtEquity">—</b></div><div><span>流動比率</span><b id="currentRatio">—</b></div></div></div>
+          <div class="fund-card"><div class="fund-head"><b>株主還元</b><strong id="returnScore">—</strong></div><div class="rows"><div><span>配当利回り</span><b id="dividendYield">—</b></div><div><span>配当金</span><b id="dividendRate">—</b></div><div><span>配当性向</span><b id="payoutRatio">—</b></div></div></div>
+          <div class="fund-card insights"><div class="insight-col"><b>ポジティブ</b><ul id="fundGood"></ul></div><div class="insight-col"><b>注意</b><ul id="fundWarning"></ul></div><div class="insight-col"><b>ネガティブ</b><ul id="fundBad"></ul></div></div>
+        </div>
+        <div class="disclaimer">Chart AIのスコア・「上昇寄り/下降寄り」表示はルールベースの情報整理であり、将来の株価や収益を保証するものではありません。データの遅延・欠損・推定値が含まれる場合があります。</div>
+      </div>
     </section>
 
-    <main id="workspace" class="hidden">
+    <section id="discoverView" class="view">
+      <div class="section-title top-title screener-title">
+        <div>
+          <span class="eyebrow">STOCK SCREENER</span>
+          <h2>銘柄発掘</h2>
+          <p>目的から始めても、指標を1つずつ組み立ててもOK。プロ向けの条件設定を、迷わず使える画面にまとめています。</p>
+        </div>
+        <div class="screener-badge"><span></span> REAL-TIME SCREENING</div>
+      </div>
 
-        <section class="stock-heading">
+      <div class="screener-workspace">
+        <div class="screen-topbar">
+          <div class="market-switch">
+            <button class="region active" data-region="jp">🇯🇵 日本株</button>
+            <button class="region" data-region="us">🇺🇸 米国株</button>
+          </div>
+          <div class="screen-sort">
+            <span>並び順</span>
+            <select id="screenMode">
+              <option value="marketcap">時価総額が大きい順</option>
+              <option value="change">騰落率が高い順</option>
+              <option value="volume">出来高が多い順</option>
+              <option value="pe">PERが低い順</option>
+            </select>
+          </div>
+          <button id="screenClear" class="ghost">条件をリセット</button>
+          <button id="screenBtn" class="primary screen-run">検索する <span>↗</span></button>
+        </div>
+
+        <div class="screen-builder">
+          <div class="builder-head">
             <div>
-                <h2 id="stockName">-</h2>
-                <div id="stockSymbol">-</div>
+              <span class="eyebrow">01 · START WITH A GOAL</span>
+              <h3>まず「どんな銘柄か」を選ぶ</h3>
+              <p>選ぶだけで代表的な条件が自動セットされます。あとから自由に変更できます。</p>
             </div>
-            <div class="periods">
-                <button data-period="1mo">1ヶ月</button>
-                <button data-period="3mo">3ヶ月</button>
-                <button data-period="6mo">6ヶ月</button>
-                <button data-period="1y" class="active">1年</button>
-                <button data-period="2y">2年</button>
-                <button data-period="5y">5年</button>
-                <button data-period="max">最大</button>
+            <div class="mode-switch">
+              <button class="screen-level active" data-level="easy">かんたん</button>
+              <button class="screen-level" data-level="advanced">プロ設定</button>
             </div>
-        </section>
+          </div>
 
-        <section class="price-card">
-            <div>
-                <span class="eyebrow">CURRENT PRICE</span>
-                <strong id="currentPrice">-</strong>
-                <span id="change" class="change">-</span>
+          <div id="easyScreen">
+            <div class="goal-grid">
+              <button class="goal-card" data-preset="value"><span class="goal-icon">¥</span><span><b>割安</b><small>PER・PBRを低めに</small></span><em>VALUE</em></button>
+              <button class="goal-card" data-preset="growth"><span class="goal-icon">↗</span><span><b>成長</b><small>売上・EPSの伸び</small></span><em>GROWTH</em></button>
+              <button class="goal-card" data-preset="dividend"><span class="goal-icon">%</span><span><b>高配当</b><small>配当利回りを重視</small></span><em>INCOME</em></button>
+              <button class="goal-card" data-preset="quality"><span class="goal-icon">◆</span><span><b>高収益</b><small>ROE・ROAを重視</small></span><em>QUALITY</em></button>
+              <button class="goal-card" data-preset="large"><span class="goal-icon">◎</span><span><b>大型株</b><small>時価総額を重視</small></span><em>SIZE</em></button>
+              <button class="goal-card" data-preset="momentum"><span class="goal-icon">⚡</span><span><b>勢い</b><small>騰落率・出来高</small></span><em>MOMENTUM</em></button>
             </div>
-            <button id="addWatch" class="watch-button">☆ ウォッチリストに追加</button>
-        </section>
+          </div>
 
-        <section class="card">
-            <div class="section-title-row">
-                <h3>Price Chart</h3>
-                <div class="chart-controls">
-                    <button class="chart-tab active" data-chart="price">価格</button>
-                    <button class="chart-tab" data-chart="rsi">RSI</button>
-                    <button class="chart-tab" data-chart="macd">MACD</button>
-                </div>
+          <div class="condition-bar">
+            <div class="condition-label"><span class="eyebrow">02 · YOUR CONDITIONS</span><strong>現在の条件</strong><small>条件をクリックすると詳細設定へ移動できます</small></div>
+            <div id="activeFilterChips" class="active-filter-chips"><span class="no-filter">まだ条件がありません</span></div>
+            <span id="filterCount" class="filter-count">0条件</span>
+          </div>
+
+          <div class="advanced-wrap">
+            <div class="advanced-head">
+              <div><span class="eyebrow">03 · PROFESSIONAL FILTERS</span><h3>指標を1つずつ精密に設定</h3><p>使う指標だけON。下限・上限は空欄なら制限なしです。</p></div>
+              <span class="advanced-tip">プロ向け · 14指標</span>
             </div>
-            <div id="chart" class="chart"></div>
-        </section>
-
-        <section class="card">
-            <div class="section-title-row">
-                <h3>AI総合分析</h3>
-                <span class="research-label">研究用</span>
+            <div id="advancedScreen" class="advanced-screen">
+              <div class="filter-grid">
+                <label class="filter-item"><input type="checkbox" class="filter-enable" data-key="per"><span class="filter-name">PER <i title="株価が1株利益の何倍か。">?</i></span><span class="filter-help">株価 ÷ 利益</span><input class="filter-input" data-key="per" data-bound="min" type="number" step="0.1" placeholder="下限"><span>〜</span><input class="filter-input" data-key="per" data-bound="max" type="number" step="0.1" placeholder="上限"></label>
+                <label class="filter-item"><input type="checkbox" class="filter-enable" data-key="pbr"><span class="filter-name">PBR <i title="株価が1株純資産の何倍か。">?</i></span><span class="filter-help">株価 ÷ 純資産</span><input class="filter-input" data-key="pbr" data-bound="min" type="number" step="0.1" placeholder="下限"><span>〜</span><input class="filter-input" data-key="pbr" data-bound="max" type="number" step="0.1" placeholder="上限"></label>
+                <label class="filter-item"><input type="checkbox" class="filter-enable" data-key="peg"><span class="filter-name">PEG <i title="PERと利益成長率を組み合わせた指標。">?</i></span><span class="filter-help">割安 × 成長</span><input class="filter-input" data-key="peg" data-bound="min" type="number" step="0.1" placeholder="下限"><span>〜</span><input class="filter-input" data-key="peg" data-bound="max" type="number" step="0.1" placeholder="上限"></label>
+                <label class="filter-item"><input type="checkbox" class="filter-enable" data-key="roe"><span class="filter-name">ROE <i title="自己資本に対してどれだけ利益を生み出したか。">?</i></span><span class="filter-help">自己資本利益率</span><input class="filter-input" data-key="roe" data-bound="min" type="number" step="0.1" placeholder="下限"><span>〜</span><input class="filter-input" data-key="roe" data-bound="max" type="number" step="0.1" placeholder="上限"></label>
+                <label class="filter-item"><input type="checkbox" class="filter-enable" data-key="roa"><span class="filter-name">ROA <i title="総資産に対する利益の割合。">?</i></span><span class="filter-help">総資産利益率</span><input class="filter-input" data-key="roa" data-bound="min" type="number" step="0.1" placeholder="下限"><span>〜</span><input class="filter-input" data-key="roa" data-bound="max" type="number" step="0.1" placeholder="上限"></label>
+                <label class="filter-item"><input type="checkbox" class="filter-enable" data-key="ebitda_margin"><span class="filter-name">EBITDA率</span><span class="filter-help">本業の稼ぐ力</span><input class="filter-input" data-key="ebitda_margin" data-bound="min" type="number" step="0.1" placeholder="下限"><span>〜</span><input class="filter-input" data-key="ebitda_margin" data-bound="max" type="number" step="0.1" placeholder="上限"></label>
+                <label class="filter-item"><input type="checkbox" class="filter-enable" data-key="revenue_growth"><span class="filter-name">売上成長率</span><span class="filter-help">売上の伸び率</span><input class="filter-input" data-key="revenue_growth" data-bound="min" type="number" step="0.1" placeholder="下限"><span>〜</span><input class="filter-input" data-key="revenue_growth" data-bound="max" type="number" step="0.1" placeholder="上限"></label>
+                <label class="filter-item"><input type="checkbox" class="filter-enable" data-key="eps_growth"><span class="filter-name">EPS成長率</span><span class="filter-help">利益の伸び率</span><input class="filter-input" data-key="eps_growth" data-bound="min" type="number" step="0.1" placeholder="下限"><span>〜</span><input class="filter-input" data-key="eps_growth" data-bound="max" type="number" step="0.1" placeholder="上限"></label>
+                <label class="filter-item"><input type="checkbox" class="filter-enable" data-key="dividend_yield"><span class="filter-name">配当利回り</span><span class="filter-help">配当 ÷ 株価</span><input class="filter-input" data-key="dividend_yield" data-bound="min" type="number" step="0.1" placeholder="下限"><span>〜</span><input class="filter-input" data-key="dividend_yield" data-bound="max" type="number" step="0.1" placeholder="上限"></label>
+                <label class="filter-item"><input type="checkbox" class="filter-enable" data-key="debt_equity"><span class="filter-name">D/E</span><span class="filter-help">負債 ÷ 自己資本</span><input class="filter-input" data-key="debt_equity" data-bound="min" type="number" step="1" placeholder="下限"><span>〜</span><input class="filter-input" data-key="debt_equity" data-bound="max" type="number" step="1" placeholder="上限"></label>
+                <label class="filter-item"><input type="checkbox" class="filter-enable" data-key="current_ratio"><span class="filter-name">流動比率</span><span class="filter-help">短期の支払余力</span><input class="filter-input" data-key="current_ratio" data-bound="min" type="number" step="0.1" placeholder="下限"><span>〜</span><input class="filter-input" data-key="current_ratio" data-bound="max" type="number" step="0.1" placeholder="上限"></label>
+                <label class="filter-item"><input type="checkbox" class="filter-enable" data-key="market_cap"><span class="filter-name">時価総額</span><span class="filter-help">企業の市場規模</span><input class="filter-input" data-key="market_cap" data-bound="min" type="number" step="100000000" placeholder="下限"><span>〜</span><input class="filter-input" data-key="market_cap" data-bound="max" type="number" step="100000000" placeholder="上限"></label>
+                <label class="filter-item"><input type="checkbox" class="filter-enable" data-key="price_change"><span class="filter-name">騰落率</span><span class="filter-help">直近の値動き</span><input class="filter-input" data-key="price_change" data-bound="min" type="number" step="0.1" placeholder="下限"><span>〜</span><input class="filter-input" data-key="price_change" data-bound="max" type="number" step="0.1" placeholder="上限"></label>
+                <label class="filter-item"><input type="checkbox" class="filter-enable" data-key="volume"><span class="filter-name">出来高</span><span class="filter-help">売買の活発さ</span><input class="filter-input" data-key="volume" data-bound="min" type="number" step="1000" placeholder="下限"><span>〜</span><input class="filter-input" data-key="volume" data-bound="max" type="number" step="1000" placeholder="上限"></label>
+              </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            <div class="verdict">
-                <div>
-                    <span class="eyebrow">OVERALL SIGNAL</span>
-                    <strong id="overallLabel">-</strong>
-                    <p id="overallExplanation">-</p>
-                </div>
-                <div class="score">
-                    <span>総合スコア</span>
-                    <strong id="overallScore">-</strong>
-                    <small>/ 100</small>
-                </div>
-            </div>
+      <div class="results-header">
+        <div><span class="eyebrow">SCREENING RESULTS</span><h3 id="screenTitle">日本株</h3></div>
+        <span id="screenStatus" class="muted">条件を選んで「検索する」を押してください</span>
+      </div>
+      <div class="panel table-panel">
+        <div class="table-wrap"><table><thead><tr><th>銘柄</th><th>名称</th><th>価格</th><th>騰落率</th><th>時価総額</th><th>出来高</th><th>PER</th><th>PBR</th><th>ROE</th><th>配当利回り</th><th></th></tr></thead><tbody id="screenBody"><tr><td colspan="11" class="table-empty"><div class="empty-search-icon">⌕</div><b>まだ検索していません</b><br><small>目的を選ぶか、プロ設定から条件を追加してください。</small></td></tr></tbody></table></div>
+        <div class="pager"><button id="prevPage">← 前へ</button><span id="pageLabel">1</span><button id="nextPage">次へ →</button></div>
+      </div>
+      <p class="data-note">データはYahoo Financeの提供範囲・更新状況に依存します。条件検索は情報整理のための機能であり、将来の株価や投資成果を保証するものではありません。</p>
+    </section>
 
-            <div class="probability-grid">
-                <div>
-                    <span>上昇確率</span>
-                    <strong id="upProbability">-</strong>
-                </div>
-                <div>
-                    <span>下降確率</span>
-                    <strong id="downProbability">-</strong>
-                </div>
-                <div>
-                    <span>モデル検証精度</span>
-                    <strong id="walkAccuracy">-</strong>
-                </div>
-            </div>
+    <section id="watchlistView" class="view">
+      <div class="section-title top-title"><span class="eyebrow">PERSONAL WORKSPACE</span><h2>ウォッチリスト</h2><p>ブラウザに保存されるローカルウォッチリスト。ログイン不要。</p></div>
+      <div id="watchlistGrid" class="watch-grid"></div>
+    </section>
+  </main>
 
-            <div class="reason-columns">
-                <div>
-                    <h4>主なプラス材料</h4>
-                    <ul id="positives"></ul>
-                </div>
-                <div>
-                    <h4>注意材料</h4>
-                    <ul id="cautions"></ul>
-                </div>
-            </div>
-        </section>
-
-        <section class="card">
-            <h3>Market Indicators</h3>
-            <div class="metric-grid">
-                <div><span>RSI (14)</span><strong id="rsi">-</strong><small id="rsiLabel">-</small></div>
-                <div><span>MACD</span><strong id="macd">-</strong><small id="macdLabel">-</small></div>
-                <div><span>MA20</span><strong id="ma20">-</strong></div>
-                <div><span>MA50</span><strong id="ma50">-</strong></div>
-                <div><span>MA200</span><strong id="ma200">-</strong></div>
-                <div><span>ATR</span><strong id="atr">-</strong></div>
-                <div><span>Stochastic %K</span><strong id="stochK">-</strong></div>
-                <div><span>ROC</span><strong id="roc">-</strong></div>
-                <div><span>標準偏差</span><strong id="volatility">-</strong></div>
-                <div><span>出来高倍率</span><strong id="volumeRatio">-</strong></div>
-                <div><span>ボリンジャー上限</span><strong id="bbUpper">-</strong></div>
-                <div><span>ボリンジャー下限</span><strong id="bbLower">-</strong></div>
-            </div>
-        </section>
-
-        <section class="card">
-            <h3>AI Models</h3>
-            <div class="model-grid">
-                <div class="model">
-                    <span>XGBoost</span>
-                    <strong id="xgbPrediction">-</strong>
-                    <small id="xgbProbability">-</small>
-                </div>
-                <div class="model">
-                    <span>DTW</span>
-                    <strong id="dtwDirection">-</strong>
-                    <small>過去類似パターン</small>
-                </div>
-                <div class="model">
-                    <span>Walk-Forward</span>
-                    <strong id="wfAccuracy">-</strong>
-                    <small>予測方向ではなくモデル検証</small>
-                </div>
-            </div>
-        </section>
-
-        <section class="card">
-            <h3>Company / Market Information</h3>
-            <div class="info-grid">
-                <div><span>市場</span><strong id="exchange">-</strong></div>
-                <div><span>通貨</span><strong id="currency">-</strong></div>
-                <div><span>セクター</span><strong id="sector">-</strong></div>
-                <div><span>業種</span><strong id="industry">-</strong></div>
-                <div><span>時価総額</span><strong id="marketCap">-</strong></div>
-                <div><span>PER</span><strong id="per">-</strong></div>
-                <div><span>PBR</span><strong id="pbr">-</strong></div>
-                <div><span>EPS</span><strong id="eps">-</strong></div>
-                <div><span>配当利回り</span><strong id="dividendYield">-</strong></div>
-                <div><span>52週高値</span><strong id="week52High">-</strong></div>
-                <div><span>52週安値</span><strong id="week52Low">-</strong></div>
-                <div><span>出来高</span><strong id="volume">-</strong></div>
-            </div>
-        </section>
-
-        <section class="notice">
-            このページは過去の市場データを用いた数理・統計的な研究用分析です。
-            AI総合判定や各指標は将来の価格を保証するものではなく、売買を推奨するものでもありません。
-            Walk-Forwardはモデルの過去データ上の検証結果であり、「上昇」「下降」の予測ではありません。
-        </section>
-    </main>
-
-    <footer>Chart AI · Quantitative Research</footer>
-</div>
-
-<script>
-let activeSymbol = null;
-let activeName = null;
-let activePeriod = "1y";
-let activeChart = "price";
-
-const $ = id => document.getElementById(id);
-
-function escapeHtml(value) {
-    return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
-
-function fmt(value, digits = 2) {
-    if (value === null || value === undefined || Number.isNaN(Number(value))) return "-";
-    return Number(value).toLocaleString("ja-JP", {
-        maximumFractionDigits: digits
-    });
-}
-
-function pct(value) {
-    return value === null || value === undefined ? "-" : `${(Number(value) * 100).toFixed(1)}%`;
-}
-
-function watchlist() {
-    try {
-        return JSON.parse(localStorage.getItem("chartAI_watchlist") || "[]");
-    } catch {
-        return [];
-    }
-}
-
-function saveWatchlist(list) {
-    localStorage.setItem("chartAI_watchlist", JSON.stringify(list));
-    renderWatchlist();
-    updateWatchButton();
-}
-
-function isWatched(symbol) {
-    return watchlist().some(x => x.symbol === symbol);
-}
-
-function addToWatchlist() {
-    if (!activeSymbol) return;
-    const list = watchlist();
-    if (!isWatched(activeSymbol)) {
-        list.push({ symbol: activeSymbol, name: activeName || activeSymbol });
-        saveWatchlist(list);
-    }
-}
-
-function removeFromWatchlist(symbol) {
-    saveWatchlist(watchlist().filter(x => x.symbol !== symbol));
-}
-
-function updateWatchButton() {
-    if (!activeSymbol) return;
-    $("addWatch").textContent = isWatched(activeSymbol)
-        ? "★ ウォッチリスト登録済み"
-        : "☆ ウォッチリストに追加";
-}
-
-function renderWatchlist() {
-    const box = $("watchList");
-    const list = watchlist();
-    box.innerHTML = "";
-
-    if (!list.length) {
-        box.innerHTML = "<div class='empty'>まだ銘柄がありません。</div>";
-        return;
-    }
-
-    list.forEach(item => {
-        const row = document.createElement("div");
-        row.className = "watch-row";
-        row.innerHTML = `
-            <button class="watch-open">
-                <strong>${escapeHtml(item.name)}</strong>
-                <small>${escapeHtml(item.symbol)}</small>
-            </button>
-            <button class="remove-watch">削除</button>
-        `;
-
-        row.querySelector(".watch-open").onclick = () => {
-            selectStock(item.symbol, item.name);
-            $("watchPanel").classList.add("hidden");
-        };
-
-        row.querySelector(".remove-watch").onclick = () => {
-            removeFromWatchlist(item.symbol);
-        };
-
-        box.appendChild(row);
-    });
-}
-
-async function searchStocks() {
-    const q = $("searchInput").value.trim();
-    if (!q) {
-        $("searchResults").innerHTML = "";
-        return;
-    }
-
-    $("searchResults").innerHTML = "<div class='loading'>検索中...</div>";
-
-    try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
-        const results = await response.json();
-
-        if (!response.ok || !Array.isArray(results)) {
-            throw new Error(results.error || "検索に失敗しました。");
-        }
-
-        $("searchResults").innerHTML = "";
-
-        if (!results.length) {
-            $("searchResults").innerHTML = "<div class='empty'>銘柄が見つかりませんでした。</div>";
-            return;
-        }
-
-        results.forEach(stock => {
-            const row = document.createElement("div");
-            row.className = "search-result";
-            row.innerHTML = `
-                <div>
-                    <strong>${escapeHtml(stock.name)}</strong>
-                    <small>${escapeHtml(stock.symbol)}${stock.exchange ? " · " + escapeHtml(stock.exchange) : ""}</small>
-                </div>
-                <button>分析</button>
-            `;
-            row.querySelector("button").onclick = () => selectStock(stock.symbol, stock.name);
-            $("searchResults").appendChild(row);
-        });
-    } catch (error) {
-        $("searchResults").innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
-    }
-}
-
-async function selectStock(symbol, name) {
-    activeSymbol = symbol;
-    activeName = name;
-
-    $("workspace").classList.remove("hidden");
-    $("stockName").textContent = name || symbol;
-    $("stockSymbol").textContent = symbol;
-    $("searchResults").innerHTML = "";
-
-    await loadAnalysis();
-    window.scrollTo({ top: $("workspace").offsetTop - 20, behavior: "smooth" });
-}
-
-async function loadAnalysis() {
-    if (!activeSymbol) return;
-
-    $("chart").innerHTML = "<div class='loading'>分析中...</div>";
-
-    try {
-        const response = await fetch(
-            `/api/analyze?symbol=${encodeURIComponent(activeSymbol)}&period=${activePeriod}`
-        );
-        const result = await response.json();
-
-        if (!response.ok) throw new Error(result.error || "分析に失敗しました。");
-
-        renderResult(result);
-    } catch (error) {
-        $("chart").innerHTML = `<div class="error">${escapeHtml(error.message)}</div>`;
-    }
-}
-
-function renderChart(result) {
-    const chart = result.chart;
-    const dates = chart.map(x => x.date);
-
-    const layout = {
-        height: 560,
-        paper_bgcolor: "#ffffff",
-        plot_bgcolor: "#ffffff",
-        hovermode: "x unified",
-        margin: { l: 55, r: 25, t: 20, b: 45 },
-        xaxis: { rangeslider: { visible: false } },
-        yaxis: { gridcolor: "#eeeeee" },
-        legend: { orientation: "h" }
-    };
-
-    let traces = [];
-
-    if (activeChart === "price") {
-        traces = [
-            {
-                x: dates,
-                open: chart.map(x => x.open),
-                high: chart.map(x => x.high),
-                low: chart.map(x => x.low),
-                close: chart.map(x => x.close),
-                type: "candlestick",
-                name: "Price"
-            },
-            {
-                x: dates, y: chart.map(x => x.ma20),
-                type: "scatter", mode: "lines", name: "MA20"
-            },
-            {
-                x: dates, y: chart.map(x => x.ma50),
-                type: "scatter", mode: "lines", name: "MA50"
-            },
-            {
-                x: dates, y: chart.map(x => x.ma200),
-                type: "scatter", mode: "lines", name: "MA200"
-            },
-            {
-                x: dates, y: chart.map(x => x.bb_upper),
-                type: "scatter", mode: "lines", name: "BB Upper",
-                line: { dash: "dot" }
-            },
-            {
-                x: dates, y: chart.map(x => x.bb_lower),
-                type: "scatter", mode: "lines", name: "BB Lower",
-                line: { dash: "dot" }
-            }
-        ];
-    } else if (activeChart === "rsi") {
-        traces = [
-            {
-                x: dates, y: chart.map(x => x.rsi),
-                type: "scatter", mode: "lines", name: "RSI"
-            }
-        ];
-        layout.yaxis = { range: [0, 100], gridcolor: "#eeeeee" };
-    } else {
-        traces = [
-            {
-                x: dates, y: chart.map(x => x.macd),
-                type: "scatter", mode: "lines", name: "MACD"
-            },
-            {
-                x: dates, y: chart.map(x => x.macd_signal),
-                type: "scatter", mode: "lines", name: "Signal"
-            }
-        ];
-    }
-
-    Plotly.newPlot(
-        "chart",
-        traces,
-        layout,
-        { responsive: true, displaylogo: false, scrollZoom: true }
-    );
-}
-
-function setList(id, items) {
-    const box = $(id);
-    box.innerHTML = "";
-    if (!items || !items.length) {
-        box.innerHTML = "<li>特に目立つ材料なし</li>";
-        return;
-    }
-    items.forEach(text => {
-        const li = document.createElement("li");
-        li.textContent = text;
-        box.appendChild(li);
-    });
-}
-
-function renderResult(result) {
-    const a = result.analysis;
-    const i = a.indicators;
-    const x = a.xgboost;
-    const wf = a.walk_forward;
-    const b = result.basic;
-
-    $("currentPrice").textContent = fmt(b.price);
-    $("change").textContent = b.change_pct === null
-        ? "-"
-        : `${b.change_pct >= 0 ? "+" : ""}${b.change_pct.toFixed(2)}%`;
-    $("change").className = "change " + (b.change_pct >= 0 ? "up" : "down");
-
-    $("overallLabel").textContent = a.combined.label;
-    $("overallScore").textContent = fmt(a.combined.score, 1);
-    $("overallExplanation").textContent = a.combined.explanation;
-
-    $("upProbability").textContent = x.probability === null ? "-" : pct(x.probability);
-    $("downProbability").textContent = x.probability === null ? "-" : pct(1 - x.probability);
-    $("walkAccuracy").textContent = wf.accuracy === null ? "データ不足" : pct(wf.accuracy);
-
-    setList("positives", a.combined.positives);
-    setList("cautions", a.combined.cautions);
-
-    $("rsi").textContent = fmt(i.rsi, 1);
-    $("rsiLabel").textContent = i.rsi_label;
-    $("macd").textContent = fmt(i.macd, 4);
-    $("macdLabel").textContent = i.macd_label;
-    $("ma20").textContent = fmt(i.ma20);
-    $("ma50").textContent = fmt(i.ma50);
-    $("ma200").textContent = fmt(i.ma200);
-    $("atr").textContent = fmt(i.atr);
-    $("stochK").textContent = fmt(i.stochastic_k, 1);
-    $("roc").textContent = i.roc === null ? "-" : `${i.roc.toFixed(2)}%`;
-    $("volatility").textContent = i.volatility === null ? "-" : `${(i.volatility * 100).toFixed(1)}%`;
-    $("volumeRatio").textContent = i.volume_ratio === null ? "-" : `${i.volume_ratio.toFixed(2)}x`;
-    $("bbUpper").textContent = fmt(i.bollinger.upper);
-    $("bbLower").textContent = fmt(i.bollinger.lower);
-
-    $("xgbPrediction").textContent = x.prediction;
-    $("xgbProbability").textContent = x.probability === null ? "-" : `上昇確率 ${pct(x.probability)}`;
-    $("dtwDirection").textContent = a.dtw.direction;
-    $("wfAccuracy").textContent = wf.accuracy === null ? "データ不足" : pct(wf.accuracy);
-
-    $("exchange").textContent = b.exchange || "-";
-    $("currency").textContent = b.currency || "-";
-    $("sector").textContent = b.sector || "-";
-    $("industry").textContent = b.industry || "-";
-    $("marketCap").textContent = b.market_cap === null ? "-" : fmt(b.market_cap, 0);
-    $("per").textContent = fmt(b.per);
-    $("pbr").textContent = fmt(b.pbr);
-    $("eps").textContent = fmt(b.eps);
-    $("dividendYield").textContent = b.dividend_yield === null ? "-" : `${(b.dividend_yield * 100).toFixed(2)}%`;
-    $("week52High").textContent = fmt(b.week52_high);
-    $("week52Low").textContent = fmt(b.week52_low);
-    $("volume").textContent = fmt(b.volume, 0);
-
-    updateWatchButton();
-    renderChart(result);
-}
-
-$("searchButton").addEventListener("click", searchStocks);
-
-$("searchInput").addEventListener("keydown", event => {
-    if (event.key === "Enter") {
-        event.preventDefault();
-        searchStocks();
-    }
-});
-
-$("addWatch").addEventListener("click", addToWatchlist);
-
-$("watchButton").addEventListener("click", () => {
-    renderWatchlist();
-    $("watchPanel").classList.toggle("hidden");
-});
-
-$("closeWatch").addEventListener("click", () => {
-    $("watchPanel").classList.add("hidden");
-});
-
-document.querySelectorAll(".periods button").forEach(button => {
-    button.addEventListener("click", async () => {
-        document.querySelectorAll(".periods button").forEach(x => x.classList.remove("active"));
-        button.classList.add("active");
-        activePeriod = button.dataset.period;
-        await loadAnalysis();
-    });
-});
-
-document.querySelectorAll(".chart-tab").forEach(button => {
-    button.addEventListener("click", () => {
-        document.querySelectorAll(".chart-tab").forEach(x => x.classList.remove("active"));
-        button.classList.add("active");
-        activeChart = button.dataset.chart;
-        if (activeSymbol) loadAnalysis();
-    });
-});
-
-renderWatchlist();
-</script>
+  <footer><b>Chart AI</b><span>Market intelligence workspace</span><span>Data: Yahoo Finance via yfinance</span></footer>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>
