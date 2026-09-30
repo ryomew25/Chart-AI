@@ -2,3 +2,5 @@ Flask>=3.0,<4
 yfinance>=0.2.66
 pandas>=2.2
 numpy>=1.26
+
+gunicorn>=23.0
